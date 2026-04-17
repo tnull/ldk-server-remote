@@ -3,6 +3,7 @@ package org.lightningdevkit.ldkserver.remote.ui.node
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -56,6 +58,7 @@ import org.lightningdevkit.ldkserver.client.NodeInfo
 import org.lightningdevkit.ldkserver.client.PeerInfo
 import org.lightningdevkit.ldkserver.remote.ui.AppState
 import org.lightningdevkit.ldkserver.remote.util.TimeFormatter
+import org.lightningdevkit.ldkserver.remote.util.truncateMiddle
 
 /**
  * Node tab: identity + sync status + peers. Tap a copyable field to copy to the
@@ -144,6 +147,7 @@ fun NodeScreen(
                             items(state.peers, key = { it.nodeId }) { peer ->
                                 PeerRow(
                                     peer = peer,
+                                    onCopy = copyToClipboard,
                                     onDisconnect = {
                                         viewModel.disconnectPeer(peer.nodeId) { outcome ->
                                             outcome.onFailure {
@@ -168,57 +172,62 @@ private fun NodeInfoCard(
     onCopy: (String, String) -> Unit,
 ) {
     Card(shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(vertical = 16.dp)) {
             Text(
                 info.nodeAlias ?: "Unnamed node",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(4.dp))
             CopyableField("Node ID", info.nodeId, onCopy = onCopy)
 
             if (info.nodeUris.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
                     "Connection strings",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 )
                 info.nodeUris.forEach { uri ->
-                    Spacer(Modifier.height(4.dp))
-                    CopyableField(label = "", value = uri, onCopy = onCopy)
+                    CopyableField(label = null, value = uri, onCopy = onCopy)
                 }
             }
 
             info.currentBestBlock?.let { bb ->
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    "Best block ${bb.height}",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Medium,
-                )
-                Text(
-                    truncateMiddle(bb.blockHash, keep = 10),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Spacer(Modifier.height(8.dp))
+                CopyableField(
+                    label = "Best block ${bb.height}",
+                    value = bb.blockHash,
+                    onCopy = onCopy,
                 )
             }
         }
     }
 }
 
+/**
+ * Row that renders [value] (truncated for readability) and copies the full string on
+ * tap. The whole row is clickable, not just a tiny icon — thumb-size tap target —
+ * but a small copy icon remains visible on the right to signal the affordance.
+ */
 @Composable
 private fun CopyableField(
-    label: String,
+    label: String?,
     value: String,
     onCopy: (String, String) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onCopy(label?.ifBlank { null } ?: "Value", value) }
+                .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            if (label.isNotEmpty()) {
+            if (!label.isNullOrEmpty()) {
                 Text(
                     label,
                     style = MaterialTheme.typography.labelSmall,
@@ -226,17 +235,17 @@ private fun CopyableField(
                 )
             }
             Text(
-                truncateMiddle(value, keep = 14),
-                style = MaterialTheme.typography.bodySmall,
+                value.truncateMiddle(keep = 14),
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
-        IconButton(onClick = { onCopy(label.ifBlank { "Value" }, value) }) {
-            Icon(
-                Icons.Filled.ContentCopy,
-                contentDescription = "Copy",
-                modifier = Modifier.size(20.dp),
-            )
-        }
+        Spacer(Modifier.size(8.dp))
+        Icon(
+            Icons.Filled.ContentCopy,
+            contentDescription = "Copy",
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -299,52 +308,69 @@ private fun SectionHeader(text: String) {
 @Composable
 private fun PeerRow(
     peer: PeerInfo,
+    onCopy: (String, String) -> Unit,
     onDisconnect: () -> Unit,
 ) {
     Card(
-        onClick = onDisconnect,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
+            // Tap-to-copy the pubkey. Address renders as a separate copyable row
+            // underneath so users don't have to fish the IP out of a disconnect gesture.
+            Column(
                 modifier =
                     Modifier
-                        .size(10.dp)
-                        .background(
-                            if (peer.isConnected) Color(0xFF2FA44F) else Color(0xFF9E9E9E),
-                            CircleShape,
-                        ),
-            )
-            Spacer(Modifier.size(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    truncateMiddle(peer.nodeId),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                )
+                        .weight(1f)
+                        .clickable { onCopy("Peer pubkey", peer.nodeId) }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(10.dp)
+                                .background(
+                                    if (peer.isConnected) Color(0xFF2FA44F) else Color(0xFF9E9E9E),
+                                    CircleShape,
+                                ),
+                    )
+                    Spacer(Modifier.size(10.dp))
+                    Text(
+                        peer.nodeId.truncateMiddle(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    if (peer.isPersisted) {
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            "Persisted",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Spacer(Modifier.size(4.dp))
                 Text(
                     peer.address,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (peer.isPersisted) {
-                Text(
-                    "Persisted",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            IconButton(
+                onClick = onDisconnect,
+                modifier = Modifier.padding(end = 8.dp),
+            ) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = "Disconnect",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
     }
 }
-
-private fun truncateMiddle(
-    s: String,
-    keep: Int = 8,
-): String = if (s.length <= 2 * keep + 1) s else s.take(keep) + "…" + s.takeLast(keep)

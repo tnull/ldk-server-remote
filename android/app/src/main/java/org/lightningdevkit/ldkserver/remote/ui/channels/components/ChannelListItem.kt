@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.lightningdevkit.ldkserver.client.ChannelInfo
 import org.lightningdevkit.ldkserver.remote.util.SatsFormatter
+import org.lightningdevkit.ldkserver.remote.util.truncateMiddle
 
 @Composable
 fun ChannelListItem(
@@ -43,7 +44,7 @@ fun ChannelListItem(
                 StatusDot(channel = channel)
                 Spacer(Modifier.padding(end = 10.dp))
                 Text(
-                    text = truncateMiddle(channel.counterpartyNodeId),
+                    text = channel.counterpartyNodeId.truncateMiddle(),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
@@ -130,10 +131,3 @@ private fun CapacityBar(
         )
     }
 }
-
-// We truncate the 66-char counterparty node pubkey to "03abcdef…1234" so it fits on a
-// phone screen. In later steps we'll add a full-detail screen that shows the whole id.
-private fun truncateMiddle(
-    s: String,
-    keep: Int = 8,
-): String = if (s.length <= 2 * keep + 1) s else s.take(keep) + "…" + s.takeLast(keep)
