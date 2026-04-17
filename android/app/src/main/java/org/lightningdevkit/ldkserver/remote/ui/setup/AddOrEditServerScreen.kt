@@ -104,7 +104,10 @@ private fun AddOrEditServerScreenContent(
                 setDesiredBarcodeFormats(ScanOptions.QR_CODE)
                 setPrompt("Scan an LDK Server Remote setup QR")
                 setBeepEnabled(false)
-                setOrientationLocked(false)
+                // Route through our PortraitCaptureActivity — zxing-android-embedded's
+                // default scanner is locked to landscape.
+                setCaptureActivity(PortraitCaptureActivity::class.java)
+                setOrientationLocked(true)
             },
         )
     }
