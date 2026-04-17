@@ -38,7 +38,7 @@ The Rust side — UniFFI bindings for `ldk-server-client` — lives in the [ldk-
 
 - **UniFFI, not raw gRPC from Kotlin.** Authentication (HMAC-SHA256), gRPC framing, and the entire type system are already implemented in the Rust client; we expose them via UniFFI rather than re-implementing them.
 - **Multi-server from day one.** The landing screen is a list of configured servers (with a network chip), and tapping one transitions into that server's tabbed main UI. Adding a server doesn't attempt a connection — connection is lazy.
-- **No secrets in the repo.** API keys, TLS certs, and server URLs come from the in-app Setup screen (persisted locally via `EncryptedSharedPreferences`) or, for automated tests, from environment variables.
+- **No secrets in the repo.** API keys, TLS certs, and server URLs come from the in-app Setup screen (persisted locally in a Tink-encrypted Jetpack DataStore, wrapped by a hardware-backed Android Keystore key) or, for automated tests, from environment variables.
 
 ## Building the APK
 
