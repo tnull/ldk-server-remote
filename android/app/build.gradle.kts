@@ -18,6 +18,14 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Restrict packaged native libs to the three ABIs we cross-compile the Rust
+        // client for. Without this, JNA's AAR would drag its mips/armeabi/x86 libs
+        // into the APK (only jnidispatch, not our lib, so they'd crash at runtime
+        // anyway on those ABIs).
+        ndk {
+            abiFilters += setOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
     }
 
     buildTypes {
