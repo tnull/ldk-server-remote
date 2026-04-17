@@ -93,12 +93,6 @@ class EncryptedServerStore(
                     },
                 )
             val storage = TinkEncryptedBlobStorage.create(context, dataStore)
-            // Migrate any legacy EncryptedSharedPreferences data before the store reads
-            // from the new location — otherwise the first load would see an empty blob
-            // and we'd lose the user's server list.
-            runBlocking {
-                EncryptedServerStoreMigration.migrateIfNeeded(context, storage)
-            }
             return EncryptedServerStore(storage)
         }
     }
