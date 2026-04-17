@@ -5,36 +5,46 @@ import java.text.DecimalFormatSymbols
 import java.util.Locale
 
 /**
- * Centralised formatting for on-chain sats and Lightning msats.
+ * Centralised Bitcoin-amount formatting.
  *
- * All display values in the wallet UI go through these helpers so number grouping,
- * unit labels, and msat→sat conversion stay consistent across screens. Always
- * renders with a space-grouped English locale (e.g. `1,234,567 sats`) rather than
- * the device locale — cryptocurrency amounts frequently land in copy-pasted logs,
- * invoices, and tickets, and locale-dependent separators make those ambiguous.
+ * Follows the Bitcoin Design Guide's "₿-only" convention
+ * (https://bitcoin.design/guide/designing-products/units-and-symbols/#-only-format):
+ *
+ *  * Always show integer quantities — no decimals in product UIs.
+ *  * Prefix the quantity with `₿` (no space, matching the guide's examples
+ *    `₿5,449`, `₿15,000`).
+ *  * Don't print the words `sats` / `satoshis` alongside a rendered value.
+ *
+ * There's one intentional exception to the last rule: **text-input labels keep
+ * `(sats)`**. In a form field an `₿`-suffixed label is easy to misread as
+ * `(BTC)` and then the user types 1 expecting to send 1 BTC. "sats" is
+ * unambiguous in that context. Rendered values from this formatter already carry
+ * the `₿` prefix, so there's no mixed notation next to an entered amount.
+ *
+ * Number grouping is always English (`,` thousands separator) regardless of device
+ * locale — Bitcoin amounts routinely end up pasted into logs and tickets, and
+ * locale-dependent separators make those ambiguous.
+ *
+ * **Milli-sat precision is deliberately excluded.** The guide only speaks to whole
+ * satoshis; mixing `₿` with a fractional value would be misleading. Lightning
+ * payment lists floor msat amounts to whole sats; detail screens that genuinely
+ * need msat precision should emit the raw msat integer with an explicit `msat`
+ * label, outside this formatter.
  */
 object SatsFormatter {
+    const val UNIT = "₿"
+
     private val grouping =
         DecimalFormat("#,##0", DecimalFormatSymbols(Locale.ENGLISH).apply { groupingSeparator = ',' })
 
-    /** Number of sats per satoshi-in-millisatoshi (1 sat = 1000 msat). */
     private const val MSATS_PER_SAT = 1_000UL
 
-    /** `123456` → `"123,456 sats"`. */
-    fun formatSats(sats: ULong): String = "${grouping.format(sats.toLong())} sats"
+    /** `5449` → `"₿5,449"`. */
+    fun formatSats(sats: ULong): String = "$UNIT${grouping.format(sats.toLong())}"
 
     /**
-     * Truncating msat → sat formatter (drops the sub-sat portion). Used for amounts in
-     * list rows where sub-sat precision would be distracting.
+     * Millisatoshi → whole-sats formatter. Floors the sub-sat portion — list-row
+     * amounts render cleanly even when the server returns a non-whole-sat total.
      */
     fun formatMsatsAsSats(msats: ULong): String = formatSats(msats / MSATS_PER_SAT)
-
-    /** Lossless msat formatter: `1234567` → `"1,234.567 sats"`. For detail screens. */
-    fun formatMsatsPrecise(msats: ULong): String {
-        val whole = msats / MSATS_PER_SAT
-        val fraction = msats % MSATS_PER_SAT
-        if (fraction == 0UL) return formatSats(whole)
-        // %03d preserves leading zeros (e.g. 5 msat → "0.005 sats").
-        return "${grouping.format(whole.toLong())}.%03d sats".format(fraction.toLong())
-    }
 }
