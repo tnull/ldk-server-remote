@@ -95,18 +95,25 @@ fun ServerListScreen(
             if (servers.isEmpty()) {
                 EmptyState(onAddServerClicked = onAddServerClicked)
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(servers, key = { it.id }) { entry ->
-                        ServerRow(
-                            entry = entry,
-                            onClick = { onServerSelected(entry) },
-                            onEdit = { onEditServerClicked(entry) },
-                            onDelete = { pendingDelete = entry },
-                        )
+                Box(modifier = Modifier.fillMaxSize()) {
+                    // Peeker renders first so it sits *behind* the list. The list's
+                    // cards cover it where there are rows; below the last row there's
+                    // open space, so the character peeks through there. With the 1–5
+                    // servers typical users configure, there's always room.
+                    Peeker()
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(servers, key = { it.id }) { entry ->
+                            ServerRow(
+                                entry = entry,
+                                onClick = { onServerSelected(entry) },
+                                onEdit = { onEditServerClicked(entry) },
+                                onDelete = { pendingDelete = entry },
+                            )
+                        }
                     }
                 }
             }

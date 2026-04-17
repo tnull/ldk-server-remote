@@ -138,11 +138,14 @@ private fun WalletScreenContent(
                             .fillMaxSize()
                             .padding(innerPadding),
                 ) {
-                    PopulatedWallet(
-                        state = state,
-                        onSendClicked = onSendClicked,
-                        onReceiveClicked = onReceiveClicked,
-                    )
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Peeker()
+                        PopulatedWallet(
+                            state = state,
+                            onSendClicked = onSendClicked,
+                            onReceiveClicked = onReceiveClicked,
+                        )
+                    }
                 }
         }
     }

@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
 import kotlinx.coroutines.launch
 import org.lightningdevkit.ldkserver.remote.service.FakeLdkService
+import org.lightningdevkit.ldkserver.remote.ui.common.Peeker
 import org.lightningdevkit.ldkserver.remote.ui.theme.LdkServerRemoteTheme
 import org.lightningdevkit.ldkserver.remote.util.QrCodeGenerator
 
@@ -129,6 +130,14 @@ fun ReceiveScreen(
 
 @Composable
 private fun TypePicker(onPick: (ReceiveType) -> Unit) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Peeker()
+        TypePickerCards(onPick)
+    }
+}
+
+@Composable
+private fun TypePickerCards(onPick: (ReceiveType) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             "How should the sender pay you?",

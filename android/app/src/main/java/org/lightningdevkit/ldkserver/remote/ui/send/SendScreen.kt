@@ -45,6 +45,7 @@ import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import org.lightningdevkit.ldkserver.client.UnifiedSendResult
 import org.lightningdevkit.ldkserver.remote.service.FakeLdkService
+import org.lightningdevkit.ldkserver.remote.ui.common.Peeker
 import org.lightningdevkit.ldkserver.remote.ui.setup.PortraitCaptureActivity
 import org.lightningdevkit.ldkserver.remote.ui.theme.LdkServerRemoteTheme
 import org.lightningdevkit.ldkserver.remote.util.SatsFormatter
@@ -304,42 +305,47 @@ private fun ResultStep(
     onDone: () -> Unit,
     onTryAgain: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        val error = state.sendError
-        if (error != null) {
-            Icon(
-                Icons.Filled.ErrorOutline,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.height(64.dp),
-            )
-            Spacer(Modifier.height(12.dp))
-            Text("Payment failed", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            Text(
-                error,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(24.dp))
-            Button(onClick = onTryAgain, modifier = Modifier.fillMaxWidth()) { Text("Try again") }
-        } else {
-            Icon(
-                Icons.Filled.Check,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.height(64.dp),
-            )
-            Spacer(Modifier.height(12.dp))
-            Text("Payment sent", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            Text(resultSubtitle(state.result), style = MaterialTheme.typography.bodyMedium)
-            Spacer(Modifier.height(24.dp))
-            Button(onClick = onDone, modifier = Modifier.fillMaxWidth()) { Text("Done") }
+    androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+        // Only peek on success — showing a cheerful Bitcoin character next to a
+        // "Payment failed" screen would be tone-deaf.
+        if (state.sendError == null) Peeker()
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            val error = state.sendError
+            if (error != null) {
+                Icon(
+                    Icons.Filled.ErrorOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.height(64.dp),
+                )
+                Spacer(Modifier.height(12.dp))
+                Text("Payment failed", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(24.dp))
+                Button(onClick = onTryAgain, modifier = Modifier.fillMaxWidth()) { Text("Try again") }
+            } else {
+                Icon(
+                    Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.height(64.dp),
+                )
+                Spacer(Modifier.height(12.dp))
+                Text("Payment sent", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(8.dp))
+                Text(resultSubtitle(state.result), style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(24.dp))
+                Button(onClick = onDone, modifier = Modifier.fillMaxWidth()) { Text("Done") }
+            }
         }
     }
 }

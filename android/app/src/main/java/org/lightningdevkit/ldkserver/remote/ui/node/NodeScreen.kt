@@ -57,6 +57,7 @@ import kotlinx.coroutines.launch
 import org.lightningdevkit.ldkserver.client.NodeInfo
 import org.lightningdevkit.ldkserver.client.PeerInfo
 import org.lightningdevkit.ldkserver.remote.ui.AppState
+import org.lightningdevkit.ldkserver.remote.ui.common.Peeker
 import org.lightningdevkit.ldkserver.remote.util.TimeFormatter
 import org.lightningdevkit.ldkserver.remote.util.truncateMiddle
 
@@ -123,41 +124,44 @@ fun NodeScreen(
                             .fillMaxSize()
                             .padding(innerPadding),
                 ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        state.nodeInfo?.let { info ->
-                            item { NodeInfoCard(info, onCopy = copyToClipboard) }
-                            item { SyncStatusCard(info) }
-                        }
-                        item {
-                            SectionHeader("Peers")
-                        }
-                        if (state.peers.isEmpty()) {
-                            item {
-                                Text(
-                                    "No peers connected.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Peeker()
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            state.nodeInfo?.let { info ->
+                                item { NodeInfoCard(info, onCopy = copyToClipboard) }
+                                item { SyncStatusCard(info) }
                             }
-                        } else {
-                            items(state.peers, key = { it.nodeId }) { peer ->
-                                PeerRow(
-                                    peer = peer,
-                                    onCopy = copyToClipboard,
-                                    onDisconnect = {
-                                        viewModel.disconnectPeer(peer.nodeId) { outcome ->
-                                            outcome.onFailure {
-                                                scope.launch {
-                                                    snackbar.showSnackbar(it.message ?: "Failed to disconnect")
+                            item {
+                                SectionHeader("Peers")
+                            }
+                            if (state.peers.isEmpty()) {
+                                item {
+                                    Text(
+                                        "No peers connected.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            } else {
+                                items(state.peers, key = { it.nodeId }) { peer ->
+                                    PeerRow(
+                                        peer = peer,
+                                        onCopy = copyToClipboard,
+                                        onDisconnect = {
+                                            viewModel.disconnectPeer(peer.nodeId) { outcome ->
+                                                outcome.onFailure {
+                                                    scope.launch {
+                                                        snackbar.showSnackbar(it.message ?: "Failed to disconnect")
+                                                    }
                                                 }
                                             }
-                                        }
-                                    },
-                                )
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
