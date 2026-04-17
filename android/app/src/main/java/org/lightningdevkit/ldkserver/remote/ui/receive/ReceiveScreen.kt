@@ -14,11 +14,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CurrencyBitcoin
@@ -81,6 +83,7 @@ fun ReceiveScreen(
             ReceiveStep.TypePicker -> onDismiss()
             ReceiveStep.Form -> viewModel.onBackFromForm()
             ReceiveStep.Qr -> viewModel.onBackFromQr()
+            ReceiveStep.Received -> onDismiss()
         }
     }
 
@@ -94,16 +97,18 @@ fun ReceiveScreen(
                             ReceiveStep.TypePicker -> onDismiss()
                             ReceiveStep.Form -> viewModel.onBackFromForm()
                             ReceiveStep.Qr -> viewModel.onBackFromQr()
+                            ReceiveStep.Received -> onDismiss()
                         }
                     }) {
                         Icon(
                             imageVector =
-                                if (state.step == ReceiveStep.TypePicker) {
+                                if (state.step == ReceiveStep.TypePicker || state.step == ReceiveStep.Received) {
                                     Icons.Filled.Close
                                 } else {
                                     Icons.Filled.ArrowBack
                                 },
-                            contentDescription = if (state.step == ReceiveStep.TypePicker) "Close" else "Back",
+                            contentDescription =
+                                if (state.step == ReceiveStep.TypePicker || state.step == ReceiveStep.Received) "Close" else "Back",
                         )
                     }
                 },
@@ -121,6 +126,7 @@ fun ReceiveScreen(
                 ReceiveStep.TypePicker -> TypePicker(onPick = viewModel::onTypeChosen)
                 ReceiveStep.Form -> FormStep(state = state, viewModel = viewModel)
                 ReceiveStep.Qr -> QrStep(state = state, onRegenerate = viewModel::generate)
+                ReceiveStep.Received -> ReceivedStep(state = state, onDone = onDismiss)
             }
         }
     }
@@ -384,7 +390,52 @@ private fun titleFor(step: ReceiveStep): String =
         ReceiveStep.TypePicker -> "Receive"
         ReceiveStep.Form -> "Request amount"
         ReceiveStep.Qr -> "Share with sender"
+        ReceiveStep.Received -> "Payment received"
     }
+
+// ---- Received step (celebration sheet) -------------------------------------
+
+@Composable
+private fun ReceivedStep(
+    state: ReceiveUiState,
+    onDone: () -> Unit,
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Peeker()
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                Icons.Filled.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(72.dp),
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "Payment received",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            state.receivedPayment?.amountMsat?.let { msats ->
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    org.lightningdevkit.ldkserver.remote.util.SatsFormatter.formatMsatsAsSats(msats),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Spacer(Modifier.height(24.dp))
+            androidx.compose.material3.Button(
+                onClick = onDone,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Done") }
+        }
+    }
+}
 
 @Preview
 @Composable
