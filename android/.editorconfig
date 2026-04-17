@@ -1,0 +1,18 @@
+root = true
+
+[*.{kt,kts}]
+# Compose @Composable functions are PascalCase by convention; ktlint's default rule
+# flags these as violations. Turning it off at the project level is the cleanest fix.
+ktlint_standard_function-naming = disabled
+
+# ktlint over-aggressively formats trailing commas inside complex expressions,
+# producing diff churn on generated and hand-written code alike.
+ktlint_standard_trailing-comma-on-call-site = disabled
+ktlint_standard_trailing-comma-on-declaration-site = disabled
+
+# UniFFI-generated bindings: disable all standard ktlint rules. The generator emits
+# snake_case filenames, wildcard imports, PascalCase properties, etc. Regenerating on
+# every Rust change means any style fixes here would be clobbered immediately.
+[**/ldk_server_client.kt]
+ktlint_standard = disabled
+ktlint_experimental = disabled

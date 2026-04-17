@@ -31,6 +31,7 @@ credentials.json
 
 # Generated UniFFI bindings (re-generated from ../ldk-server on demand)
 android/app/src/main/kotlin/
+android/app/src/generated/
 android/app/src/main/jniLibs/
 
 # Logs
