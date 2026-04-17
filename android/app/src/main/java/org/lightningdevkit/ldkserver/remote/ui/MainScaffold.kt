@@ -98,7 +98,16 @@ fun MainScaffold(
             color = androidx.compose.material3.MaterialTheme.colorScheme.background,
         ) {
             when (selectedTab) {
-                Routes.Tab.WALLET -> WalletScreen(appState = appState, serverId = serverId)
+                Routes.Tab.WALLET ->
+                    WalletScreen(
+                        appState = appState,
+                        serverId = serverId,
+                        // Send/Receive screens land in Steps 13 and 14. Until then the
+                        // buttons are inert — the Wallet tab is already useful as a
+                        // balance + activity view on its own.
+                        onSendClicked = {},
+                        onReceiveClicked = {},
+                    )
                 Routes.Tab.CHANNELS -> ChannelsScreen(appState = appState, serverId = serverId)
                 Routes.Tab.NODE -> NodeScreen(appState = appState, serverId = serverId)
             }
