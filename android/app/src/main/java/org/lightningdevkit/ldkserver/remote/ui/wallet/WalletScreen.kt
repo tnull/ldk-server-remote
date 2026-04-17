@@ -24,13 +24,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.lightningdevkit.ldkserver.remote.ui.AppState
+import org.lightningdevkit.ldkserver.remote.ui.send.SendScreen
+import org.lightningdevkit.ldkserver.remote.ui.send.SendViewModel
 import org.lightningdevkit.ldkserver.remote.ui.theme.LdkServerRemoteTheme
 import org.lightningdevkit.ldkserver.remote.ui.wallet.components.ActionButtons
 import org.lightningdevkit.ldkserver.remote.ui.wallet.components.BalanceCard
@@ -44,18 +48,19 @@ fun WalletScreen(
     onSendClicked: () -> Unit = {},
     onReceiveClicked: () -> Unit = {},
 ) {
-    // Lazy-construct a per-server VM. `remember(serverId)` scopes it to the active
-    // server — switching servers disposes the old VM rather than reusing its cached
-    // balances/payments against the new endpoint.
-    val viewModel =
+    // Lazy-construct per-server VMs. `remember(serverId)` scopes them to the active
+    // server — switching servers disposes the old VMs rather than reusing their
+    // cached balances/payments against the new endpoint.
+    val service =
         remember(serverId) {
-            val service =
-                appState.serviceFor(serverId)
-                    ?: error("No server configured for id $serverId")
-            WalletViewModel(service)
+            appState.serviceFor(serverId) ?: error("No server configured for id $serverId")
         }
+    val viewModel = remember(serverId) { WalletViewModel(service) }
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
+
+    var showSend by remember { mutableStateOf(false) }
+    val sendViewModel = remember(serverId) { SendViewModel(service) }
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let {
@@ -64,11 +69,28 @@ fun WalletScreen(
         }
     }
 
+    if (showSend) {
+        SendScreen(
+            viewModel = sendViewModel,
+            onDismiss = {
+                showSend = false
+                // A successful send should eventually show up as a new payment in
+                // the wallet list. Trigger a refresh so the activity row appears
+                // without the user having to pull-to-refresh themselves.
+                viewModel.refresh(isInitial = false)
+            },
+        )
+        return
+    }
+
     WalletScreenContent(
         state = state,
         snackbar = snackbar,
         onRefresh = { viewModel.refresh(isInitial = false) },
-        onSendClicked = onSendClicked,
+        onSendClicked = {
+            onSendClicked()
+            showSend = true
+        },
         onReceiveClicked = onReceiveClicked,
     )
 }
