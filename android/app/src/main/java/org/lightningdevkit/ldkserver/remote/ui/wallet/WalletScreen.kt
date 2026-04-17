@@ -33,6 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.lightningdevkit.ldkserver.remote.ui.AppState
+import org.lightningdevkit.ldkserver.remote.ui.receive.ReceiveScreen
+import org.lightningdevkit.ldkserver.remote.ui.receive.ReceiveViewModel
 import org.lightningdevkit.ldkserver.remote.ui.send.SendScreen
 import org.lightningdevkit.ldkserver.remote.ui.send.SendViewModel
 import org.lightningdevkit.ldkserver.remote.ui.theme.LdkServerRemoteTheme
@@ -60,7 +62,9 @@ fun WalletScreen(
     val snackbar = remember { SnackbarHostState() }
 
     var showSend by remember { mutableStateOf(false) }
+    var showReceive by remember { mutableStateOf(false) }
     val sendViewModel = remember(serverId) { SendViewModel(service) }
+    val receiveViewModel = remember(serverId) { ReceiveViewModel(service) }
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let {
@@ -69,30 +73,42 @@ fun WalletScreen(
         }
     }
 
-    if (showSend) {
-        SendScreen(
-            viewModel = sendViewModel,
-            onDismiss = {
-                showSend = false
-                // A successful send should eventually show up as a new payment in
-                // the wallet list. Trigger a refresh so the activity row appears
-                // without the user having to pull-to-refresh themselves.
-                viewModel.refresh(isInitial = false)
-            },
-        )
-        return
+    when {
+        showSend ->
+            SendScreen(
+                viewModel = sendViewModel,
+                onDismiss = {
+                    showSend = false
+                    // A successful send should eventually show up as a new payment in
+                    // the wallet list. Trigger a refresh so the activity row appears
+                    // without the user having to pull-to-refresh themselves.
+                    viewModel.refresh(isInitial = false)
+                },
+            )
+        showReceive ->
+            ReceiveScreen(
+                viewModel = receiveViewModel,
+                onDismiss = {
+                    showReceive = false
+                    receiveViewModel.reset()
+                    viewModel.refresh(isInitial = false)
+                },
+            )
+        else ->
+            WalletScreenContent(
+                state = state,
+                snackbar = snackbar,
+                onRefresh = { viewModel.refresh(isInitial = false) },
+                onSendClicked = {
+                    onSendClicked()
+                    showSend = true
+                },
+                onReceiveClicked = {
+                    onReceiveClicked()
+                    showReceive = true
+                },
+            )
     }
-
-    WalletScreenContent(
-        state = state,
-        snackbar = snackbar,
-        onRefresh = { viewModel.refresh(isInitial = false) },
-        onSendClicked = {
-            onSendClicked()
-            showSend = true
-        },
-        onReceiveClicked = onReceiveClicked,
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
