@@ -1,45 +1,42 @@
 package org.lightningdevkit.ldkserver.remote.model
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 
 /**
- * Exercises CRUD + the reactive `servers` flow. Backed by plain SharedPreferences under
- * Robolectric (EncryptedSharedPreferences requires Android KeyStore, which is painful
- * to stand up in a JVM test). The JSON serialization path is the same, so a break
- * there would surface here too.
+ * Exercises CRUD + the reactive `servers` flow. Uses an [InMemoryEncryptedBlobStorage]
+ * fake so these tests stay JVM-only — the real Tink encryption path is exercised in
+ * [TinkEncryptedBlobStorageTest].
+ *
+ * The store is built with a [Dispatchers.Unconfined]-backed scope so fire-and-forget
+ * writes settle synchronously within the test body, without virtual-time fiddling.
  */
-@RunWith(RobolectricTestRunner::class)
 class ServerStoreTest {
-    private lateinit var store: EncryptedServerStore
-
-    @Before
-    fun setUp() {
-        val context = RuntimeEnvironment.getApplication()
-        val prefs = context.getSharedPreferences("test_servers", android.content.Context.MODE_PRIVATE)
-        prefs.edit().clear().commit()
-        store = EncryptedServerStore(prefs)
-    }
+    private fun newStore(storage: EncryptedBlobStorage = InMemoryEncryptedBlobStorage()): EncryptedServerStore =
+        EncryptedServerStore(
+            storage = storage,
+            scope = CoroutineScope(Dispatchers.Unconfined),
+        )
 
     @Test
     fun starts_empty() =
         runTest {
+            val store = newStore()
             assertTrue(store.servers.first().isEmpty())
         }
 
     @Test
     fun add_get_update_remove_roundtrip() =
         runTest {
+            val store = newStore()
             val entry =
                 ServerEntry(
                     id = "id-1",
@@ -66,6 +63,7 @@ class ServerStoreTest {
     @Test
     fun update_nonexistent_id_is_noop() =
         runTest {
+            val store = newStore()
             val ghost =
                 ServerEntry(
                     id = "nobody",
@@ -83,11 +81,9 @@ class ServerStoreTest {
     @Test
     fun persists_across_store_instances() =
         runTest {
-            val ctx = RuntimeEnvironment.getApplication()
-            val prefs = ctx.getSharedPreferences("persist_test", android.content.Context.MODE_PRIVATE)
-            prefs.edit().clear().commit()
+            val shared = InMemoryEncryptedBlobStorage()
 
-            val first = EncryptedServerStore(prefs)
+            val first = newStore(shared)
             first.add(
                 ServerEntry(
                     id = "a",
@@ -100,24 +96,32 @@ class ServerStoreTest {
                 ),
             )
 
-            // Fresh instance re-reads disk state.
-            val second = EncryptedServerStore(prefs)
+            val second = newStore(shared)
             assertNotNull(second.get("a"))
             assertEquals(BitcoinNetwork.MAINNET, second.get("a")!!.network)
         }
 
     @Test
-    fun corrupt_stored_json_is_handled_gracefully() =
+    fun corrupt_stored_bytes_are_handled_gracefully() =
         runTest {
-            val ctx = RuntimeEnvironment.getApplication()
-            val prefs = ctx.getSharedPreferences("corrupt_test", android.content.Context.MODE_PRIVATE)
-            prefs.edit().putString("servers", "{not valid json").commit()
+            val shared = InMemoryEncryptedBlobStorage()
+            runBlocking { shared.write("{not valid json".toByteArray()) }
 
-            val store = EncryptedServerStore(prefs)
+            val store = newStore(shared)
             // Rather than crashing at startup we should treat corrupt state as "no
             // servers" — the user can always add one again. Losing a server entry is
             // much less bad than an unlaunchable app.
             assertTrue(store.servers.first().isEmpty())
-            assertFalse(false)
         }
+}
+
+/** Trivial in-memory stand-in for [EncryptedBlobStorage]. No encryption, no persistence. */
+private class InMemoryEncryptedBlobStorage : EncryptedBlobStorage {
+    @Volatile private var blob: ByteArray? = null
+
+    override suspend fun read(): ByteArray? = blob?.copyOf()
+
+    override suspend fun write(bytes: ByteArray) {
+        blob = bytes.copyOf()
+    }
 }

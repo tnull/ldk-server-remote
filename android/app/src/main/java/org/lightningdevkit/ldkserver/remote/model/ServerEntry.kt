@@ -5,7 +5,7 @@ import java.util.UUID
 
 /**
  * A single configured LDK Server the user can connect to. Persisted (including secrets)
- * via [ServerStore] on top of EncryptedSharedPreferences.
+ * via [ServerStore] on top of a Tink-encrypted DataStore.
  *
  * All fields are required. `id` is stable across edits and is how the rest of the app
  * references a server (routes, ViewModels, etc.).

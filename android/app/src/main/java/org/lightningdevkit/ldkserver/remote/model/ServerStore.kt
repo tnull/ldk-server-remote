@@ -1,21 +1,26 @@
 package org.lightningdevkit.ldkserver.remote.model
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
  * CRUD over the list of configured [ServerEntry]s.
  *
- * The whole list is stored as a JSON blob inside a single EncryptedSharedPreferences
- * entry. That's a deliberate choice over one-key-per-server — the list is small, and
- * the single blob keeps the on-disk representation (and migrations) simple.
+ * The whole list is stored as a single JSON blob inside an [EncryptedBlobStorage].
+ * That's a deliberate choice over one-key-per-server — the list is small, and the
+ * single blob keeps the on-disk representation (and migrations) simple.
  *
  * Exposes a [StateFlow] of the current list so the UI reactively refreshes after any
  * mutation.
@@ -33,11 +38,14 @@ interface ServerStore {
 }
 
 class EncryptedServerStore(
-    prefs: SharedPreferences,
+    private val storage: EncryptedBlobStorage,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) : ServerStore {
-    private val prefs = prefs
-    private val mutableServers = MutableStateFlow(loadFromDisk())
+    // Initial load is blocking so [servers] starts populated rather than flashing an
+    // empty list on the first frame. Same semantics as the old EncryptedSharedPreferences
+    // path, which also hit disk at construction time.
+    private val mutableServers = MutableStateFlow(runBlocking { loadFromDisk() })
 
     override val servers: StateFlow<List<ServerEntry>> = mutableServers.asStateFlow()
 
@@ -58,39 +66,34 @@ class EncryptedServerStore(
 
     private fun replaceAll(next: List<ServerEntry>) {
         mutableServers.value = next
-        prefs.edit().putString(SERVERS_KEY, json.encodeToString(next)).apply()
+        // Fire-and-forget disk write. DataStore serializes writes internally, so
+        // rapid successive mutations land on disk in submission order.
+        scope.launch {
+            storage.write(json.encodeToString(next).toByteArray(Charsets.UTF_8))
+        }
     }
 
-    private fun loadFromDisk(): List<ServerEntry> {
-        val raw = prefs.getString(SERVERS_KEY, null) ?: return emptyList()
-        return runCatching { json.decodeFromString<List<ServerEntry>>(raw) }
-            .getOrElse { emptyList() }
+    private suspend fun loadFromDisk(): List<ServerEntry> {
+        val bytes = storage.read() ?: return emptyList()
+        return runCatching {
+            json.decodeFromString<List<ServerEntry>>(String(bytes, Charsets.UTF_8))
+        }.getOrElse { emptyList() }
     }
 
     companion object {
-        private const val SERVERS_KEY = "servers"
-        private const val PREFS_FILE_NAME = "ldk_server_remote_servers"
-
         /**
-         * Factory that hands back an [EncryptedServerStore] backed by
-         * [EncryptedSharedPreferences] so both the API keys and the TLS PEM blobs
-         * live encrypted at rest.
+         * Factory that hands back an [EncryptedServerStore] backed by a Tink-encrypted
+         * DataStore so both the API keys and the TLS PEM blobs live encrypted at rest.
          */
         fun create(context: Context): EncryptedServerStore {
-            val masterKey =
-                MasterKey
-                    .Builder(context)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build()
-            val prefs =
-                EncryptedSharedPreferences.create(
-                    context,
-                    PREFS_FILE_NAME,
-                    masterKey,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            val dataStore: DataStore<Preferences> =
+                PreferenceDataStoreFactory.create(
+                    produceFile = {
+                        TinkEncryptedBlobStorage.defaultDataStoreFile(context)
+                    },
                 )
-            return EncryptedServerStore(prefs)
+            val storage = TinkEncryptedBlobStorage.create(context, dataStore)
+            return EncryptedServerStore(storage)
         }
     }
 }
