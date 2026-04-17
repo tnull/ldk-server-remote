@@ -10,6 +10,8 @@ activity-compose = "1.9.2"
 lifecycle = "2.8.6"
 navigation-compose = "2.8.2"
 security-crypto = "1.1.0-alpha06"
+datastore = "1.2.1"
+tink = "1.21.0"
 
 # Compose
 compose-bom = "2024.09.02"
@@ -45,6 +47,8 @@ androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation-compose" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
