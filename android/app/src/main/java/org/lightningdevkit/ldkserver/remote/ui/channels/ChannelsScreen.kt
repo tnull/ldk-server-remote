@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import org.lightningdevkit.ldkserver.client.ChannelInfo
 import org.lightningdevkit.ldkserver.remote.ui.AppState
 import org.lightningdevkit.ldkserver.remote.ui.channels.components.ChannelListItem
+import org.lightningdevkit.ldkserver.remote.ui.common.Peeker
 
 /**
  * Channels tab: list of channels with pull-to-refresh + "+" FAB to open, plus an
@@ -140,31 +141,34 @@ private fun EmptyState(
     modifier: Modifier = Modifier,
     onOpenClicked: () -> Unit,
 ) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = "No channels yet",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Medium,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "Open a Lightning channel to start sending and receiving payments off-chain.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
-        Spacer(Modifier.height(24.dp))
-        ExtendedFloatingActionButton(
-            onClick = onOpenClicked,
-            icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-            text = { Text("Open channel") },
-        )
+    androidx.compose.foundation.layout.Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = "No channels yet",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Open a Lightning channel to start sending and receiving payments off-chain.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            Spacer(Modifier.height(24.dp))
+            ExtendedFloatingActionButton(
+                onClick = onOpenClicked,
+                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                text = { Text("Open channel") },
+            )
+        }
+        Peeker()
     }
 }

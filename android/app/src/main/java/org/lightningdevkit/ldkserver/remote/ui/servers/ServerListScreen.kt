@@ -50,6 +50,7 @@ import org.lightningdevkit.ldkserver.remote.model.ServerEntry
 import org.lightningdevkit.ldkserver.remote.service.FakeLdkService
 import org.lightningdevkit.ldkserver.remote.ui.AppState
 import org.lightningdevkit.ldkserver.remote.ui.TestAppState
+import org.lightningdevkit.ldkserver.remote.ui.common.Peeker
 import org.lightningdevkit.ldkserver.remote.ui.theme.LdkServerRemoteTheme
 import org.lightningdevkit.ldkserver.remote.ui.theme.networkColor
 
@@ -229,31 +230,34 @@ private fun NetworkChip(network: BitcoinNetwork) {
 
 @Composable
 private fun EmptyState(onAddServerClicked: () -> Unit) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = "No servers configured",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Medium,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "Add your first LDK Server to get started.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(24.dp))
-        ExtendedFloatingActionButton(
-            onClick = onAddServerClicked,
-            icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-            text = { Text("Add your first server") },
-        )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = "No servers configured",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Add your first LDK Server to get started.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(24.dp))
+            ExtendedFloatingActionButton(
+                onClick = onAddServerClicked,
+                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                text = { Text("Add your first server") },
+            )
+        }
+        Peeker()
     }
 }
 

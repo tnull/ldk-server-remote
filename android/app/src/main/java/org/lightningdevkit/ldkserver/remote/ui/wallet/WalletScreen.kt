@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.lightningdevkit.ldkserver.remote.ui.AppState
+import org.lightningdevkit.ldkserver.remote.ui.common.Peeker
 import org.lightningdevkit.ldkserver.remote.ui.receive.ReceiveScreen
 import org.lightningdevkit.ldkserver.remote.ui.receive.ReceiveViewModel
 import org.lightningdevkit.ldkserver.remote.ui.send.SendScreen
@@ -209,22 +210,25 @@ private fun CenteredLoading(modifier: Modifier = Modifier) {
 
 @Composable
 private fun NoDataYet(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = "Couldn't reach the server yet.",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = "Pull down to retry.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = "Couldn't reach the server yet.",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Pull down to retry.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Peeker()
     }
 }
 
