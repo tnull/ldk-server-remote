@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher background color referenced by the adaptive icon. The in-app palette
+         lives in Kotlin under ui/theme/Color.kt. -->
+    <color name="ic_launcher_background">#F7931A</color>
+</resources>

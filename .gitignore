@@ -1,0 +1,37 @@
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+*.iml
+
+# Claude Code session bookkeeping
+.claude/
+
+# Gradle / Android build outputs (also ignored in android/.gitignore; repeated here for safety)
+**/build/
+**/.gradle/
+**/local.properties
+
+# Rust artifacts (we never build Rust inside this repo — ldk-server lives elsewhere —
+# but guard against stray target/ folders anyway)
+target/
+
+# Secrets — never check these in. Credentials for a live LDK Server come from env vars
+# at test time, not from files in the repo.
+*.pem
+*.crt
+*.key
+*.env
+.env*
+local.env
+credentials.json
+
+# Generated UniFFI bindings (re-generated from ../ldk-server on demand)
+android/app/src/main/kotlin/
+android/app/src/main/jniLibs/
+
+# Logs
+*.log

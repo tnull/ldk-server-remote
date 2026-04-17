@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base theme used by the activity before Compose takes over. The real theming
+         (colors, typography, Material3) lives in Kotlin under ui/theme/. -->
+    <style name="Theme.LdkServerRemote" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
