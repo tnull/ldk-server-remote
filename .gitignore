@@ -15,9 +15,9 @@ Thumbs.db
 **/.gradle/
 **/local.properties
 
-# Rust artifacts (we never build Rust inside this repo — ldk-server lives elsewhere —
-# but guard against stray target/ folders anyway)
+# Rust artifacts (the CLI helper at tools/ldk-server-remote-config/ builds here)
 target/
+Cargo.lock.bak
 
 # Secrets — never check these in. Credentials for a live LDK Server come from env vars
 # at test time, not from files in the repo.

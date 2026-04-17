@@ -1,0 +1,19 @@
+[package]
+name = "ldk-server-remote-config"
+version = "0.1.0"
+edition = "2021"
+description = "Emits an ldk-server-remote setup URI (QR-ready) for an LDK Server data directory."
+license = "MIT OR Apache-2.0"
+publish = false
+
+[[bin]]
+name = "ldk-server-remote-config"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+base64 = "0.22"
+clap = { version = "4", features = ["derive"] }
+
+[dev-dependencies]
+tempfile = "3"

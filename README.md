@@ -9,8 +9,28 @@ The app lets you manage multiple configured servers side-by-side (for example a 
 ```
 ldk-server-remote/
 ├── android/   ← Kotlin + Jetpack Compose app (this is what's built today)
-└── ios/       ← reserved for a future SwiftUI port (not created yet)
+├── ios/       ← reserved for a future SwiftUI port (not created yet)
+└── tools/
+    └── ldk-server-remote-config/  ← Rust CLI that emits a QR-ready setup URI
 ```
+
+## Quickest way to add a server
+
+On the machine running LDK Server:
+
+```bash
+cd tools/ldk-server-remote-config
+cargo run --release -- \
+    --data-dir ~/.ldk-server \
+    --name "home signet" \
+    --rpc-address 192.168.1.5:3000 \
+    --network signet \
+  | qrencode -o setup.png
+```
+
+In the Android app, tap "+" → "Scan setup QR" and aim at the image. All five
+fields (name, network, URL, API key, TLS cert) are pre-filled; tweak as
+needed (e.g. to adjust the IP for the network you're on) and hit Save.
 
 The Rust side — UniFFI bindings for `ldk-server-client` — lives in the [ldk-server](https://github.com/lightningdevkit/ldk-server) repo on a dedicated branch. The Android app consumes those bindings as a local source set plus native libraries.
 
